@@ -39,6 +39,7 @@ const render = { // will contain functions to draw things on the canvas
   grid: { x: 28, y: 31 },
   renderFrame: function() {
     this.canvas.clearRect(0,0, this.canvas.canvas.width, this.canvas.canvas.height);
+    //this.background('res/arcade.jpg');
     game.pacman.draw();
   },
   interpValue: function( from, to, delta ) {

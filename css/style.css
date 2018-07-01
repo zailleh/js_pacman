@@ -6,3 +6,8 @@
 body {
   background-color: black;
 }
+
+canvas {
+  background-image: url('../res/arcade.jpg');
+  background-size: cover;
+}
