@@ -40,7 +40,7 @@ const render = { // will contain functions to draw things on the canvas
   renderFrame: function() {
     this.canvas.clearRect(0,0, this.canvas.canvas.width, this.canvas.canvas.height);
     //this.background('res/arcade.jpg');
-    game.pacman.draw();
+    game.drawAll();
   },
   interpValue: function( from, to, delta ) {
     return from + ( (to - from ) * delta )
@@ -48,6 +48,13 @@ const render = { // will contain functions to draw things on the canvas
   frame: 0,
   tick: function() {
     this.renderFrame();
+    game.tick();
     //console.log( this.frame++ );
+  },
+  normalizeCoords: function( coords ) {
+    return {
+      x: (coords.x + this.offset.x) * this.canvas.canvas.width / this.grid.x,
+      y: (coords.y + this.offset.y) * this.canvas.canvas.height / this.grid.y
+    }
   }
 };

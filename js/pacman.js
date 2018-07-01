@@ -70,13 +70,14 @@ const game = { // contains all level functions and info
     console.log( coords );
     console.log( this.playArea[coords.y][coords.x] );
     const result = {};
+    const that = this;
     switch (this.playArea[coords.y][coords.x]) {
       case '.': // dot
-        this.dot( coords );
+        this.dot.nom( coords );
         result.move = true;
         break;
       case 'O': // power pill
-        this.powerPill( coords);
+        that.powerPill.nom( coords);
         result.move = true;
         break;
       case '|': // wall
@@ -95,30 +96,25 @@ const game = { // contains all level functions and info
 
     return result;
   },
-  dot: function( coords ) {
-    // increment score
-    // remove dot from playArea
-    this.playArea[coords.y][coords.x] = ' ';
-    // check if any more dots left
-    if ( this.getAllDots() === 0 ) {
-      // game over: you win!
-    }
-  },
   powerPill: function( coords ) {
     // set ghosts to vulnerable
     // remove powerPill from playArea
-    this.playArea[coords.y][coords.x] = ' ';
+    game.playArea[coords.y][coords.x] = ' ';
     // increment score
-    if ( this.getAllDots() === 0 ) {
+    if ( game.getAllDots() === 0 ) {
       // game over: you win!
     }
   },
   getAllDots: function() {
-    let dots = 0;
+    let dots = [];
     for ( let y = 0; y < this.playArea.length; y++ ) {
       for ( let x = 0; x < this.playArea[y].length; x++ ) {
         if ( this.playArea[y][x] === '.' || this.playArea[y][x] === 'O' ) {
-          dots++;
+          const dot = {
+            x: x,
+            y: y
+          }
+          dots.push( dot )
         }
       }
     }
@@ -135,14 +131,53 @@ const game = { // contains all level functions and info
     this.ghosts.tick();
     // do stuff on tick
   },
+  drawDots: function() {
+    const allDots = this.getAllDots();
+    for ( let i = 0; i < allDots.length; i++ ) {
+      this.dot.draw( allDots[ i ] );
+    }
+  },
+  drawAll: function() {
+    this.pacman.draw();
+    this.drawDots();
+
+  },
   // ---------------------------------- ENTITIES ---------------------------- //
   dot: {
-    draw: function ( ctx, offset, grid ) {
+    nom: function( coords ) {
+      // increment score
+      // remove dot from playArea
+      game.playArea[coords.y][coords.x] = ' ';
+      // check if any more dots left
+      if ( game.getAllDots() === 0 ) {
+        // game over: you win!
+      }
+    },
+    draw: function ( coords ) {
+      const ctx = render.canvas;
+      const grid = render.grid;
+      const offset = render.offset;
+      const frameRate = render.frameRate;
 
+      coords = render.normalizeCoords( coords );
+
+      ctx.fillStyle = '#FA0';
+      ctx.beginPath();
+      ctx.arc( coords.x, coords.y, grid.x / 10, 0, 2 * Math.PI );
+      ctx.fill();
     }
   },
 
   powerPill: {
+    nom: function( coords ) {
+      // increment score
+      // remove dot from playArea
+      game.playArea[coords.y][coords.x] = ' ';
+      // check if any more dots left
+      if ( game.getAllDots() === 0 ) {
+        // game over: you win!
+      }
+    },
     draw: function ( ctx, offset, grid ) {
 
     }
@@ -151,7 +186,7 @@ const game = { // contains all level functions and info
 
   // ------------------------------ PACMAN CHILD OBJECT ---------------------- //
   pacman: {  // contains all pacman functions and info
-    location: { x: 12.5, y: 22, xTo: 12.5, yTo: 22 }, //start location is x: 12.5, y: 22
+    location: { x: 12, y: 22, xTo: 12.5, yTo: 22 }, //start location is x: 12.5, y: 22
 
     renderInfo: { // going to be an object that contains all shape info for rendering
       hasAmimation: true,
@@ -185,17 +220,25 @@ const game = { // contains all level functions and info
 
       if ( moveResult.move === true ) {
         this.location = newCoords; // if move was a success, set current coords to new coords.
+        console.log('moving pacman', this.location);
       } else {
         // do nothing, you can't move there (eg, wall);
       }
     },
     tick: function() {
       // do stuff on tick -- called by parent "game"
+      // interval -- do every 1 second
+      if ( Math.round( this.tickTimer ) >= this.tickInterval ) {
+        this.move();
+        this.tickTimer = 0;
+      } else {
+        this.tickTimer += 1000 / render.frameRate
+      }
     },
+    tickTimer: 0,
+    tickInterval: 500,
     draw: function () {
       const ctx = render.canvas;
-      const grid = render.grid;
-      const offset = render.offset;
       const frameRate = render.frameRate;
 
       const animation = this.renderInfo.animation
@@ -221,25 +264,30 @@ const game = { // contains all level functions and info
       const startAngle = render.interpValue( fromKeyFrame.startAngle, toKeyFrame.startAngle, fractionToKeyFrame );
       const endAngle = render.interpValue( fromKeyFrame.endAngle, toKeyFrame.endAngle, fractionToKeyFrame );
 
-      console.log( startAngle, endAngle );
+      //console.( startAngle, endAngle );
       // center of cicle // TODO: smooth this using previous & to locations
-      const x = (this.location.x + offset.x) * ctx.canvas.width / grid.x
-      const y = (this.location.y + offset.x) * ctx.canvas.height / grid.y
+      let coords = {
+        x: this.location.x,
+        y: this.location.y
+      }
+      coords = render.normalizeCoords( coords )
 
       // size of circle
-      const radius = ctx.canvas.width / 28
+      const radius = ctx.canvas.width / 29; // magic numberz!
 
       // draw and fill our cicle
       ctx.fillStyle = '#FF0';
       ctx.beginPath()
-      ctx.arc( x, y, radius, startAngle, endAngle );
-      ctx.lineTo( x, y );
+      ctx.arc( coords.x, coords.y, radius, startAngle, endAngle );
+      ctx.lineTo( coords.x, coords.y );
       ctx.fill();
 
-      animation.currentTimestamp += 1000 / frameRate;
+
 
       if ( Math.round( animation.currentTimestamp ) >= duration ) {
         animation.currentTimestamp = 0;
+      } else {
+        animation.currentTimestamp += 1000 / frameRate;
       }
     }
   },
