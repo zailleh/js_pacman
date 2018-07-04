@@ -67,49 +67,44 @@ const game = { // contains all level functions and info
   /* 29 */  [ '.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.']
 ], // TODO: to be copied from playArea on game start
   testSpace: function( coords ) {
-    console.log( coords );
-    console.log( this.playArea[coords.y][coords.x] );
+    // console.log( coords );
+    // console.log( this.playArea[coords.y][coords.x] );
     const result = {};
     const that = this;
-    switch (this.playArea[coords.y][coords.x]) {
-      case '.': // dot
-        this.dot.nom( coords );
-        result.move = true;
-        break;
-      case 'O': // power pill
-        that.powerPill.nom( coords);
-        result.move = true;
-        break;
-      case '|': // wall
-        result.move = false;
-        break;
-      case ' ': // empty space
-        result.move = true;
-        break;
-      case '>':
-      case '<':
-        result.move = true;
-        break;
-      default:
-        result.move = false;
+    try {
+      switch (this.playArea[coords.y][coords.x]) {
+        case '.': // dot
+          this.dot.nom( coords );
+          result.move = true;
+          break;
+        case 'O': // power pill
+          that.powerPill.nom( coords);
+          result.move = true;
+          break;
+        case '|': // wall
+          result.move = false;
+          break;
+        case ' ': // empty space
+          result.move = true;
+          break;
+        case '>':
+        case '<':
+          result.move = true;
+          break;
+        default:
+          result.move = false;
+      }
+    } catch (err) {
+      result.move = false;
     }
 
     return result;
-  },
-  powerPill: function( coords ) {
-    // set ghosts to vulnerable
-    // remove powerPill from playArea
-    game.playArea[coords.y][coords.x] = ' ';
-    // increment score
-    if ( game.getAllDots() === 0 ) {
-      // game over: you win!
-    }
   },
   getAllDots: function() {
     let dots = [];
     for ( let y = 0; y < this.playArea.length; y++ ) {
       for ( let x = 0; x < this.playArea[y].length; x++ ) {
-        if ( this.playArea[y][x] === '.' || this.playArea[y][x] === 'O' ) {
+        if ( this.playArea[y][x] === '.') {
           const dot = {
             x: x,
             y: y
@@ -119,6 +114,21 @@ const game = { // contains all level functions and info
       }
     }
     return dots;
+  },
+  getAllPills: function() {
+    let pills = [];
+    for ( let y = 0; y < this.playArea.length; y++ ) {
+      for ( let x = 0; x < this.playArea[y].length; x++ ) {
+        if ( this.playArea[y][x] === 'O') {
+          const pill = {
+            x: x,
+            y: y
+          }
+          pills.push( pill )
+        }
+      }
+    }
+    return pills;
   },
   intervalID: -1,
   start: function() {
@@ -137,10 +147,16 @@ const game = { // contains all level functions and info
       this.dot.draw( allDots[ i ] );
     }
   },
+  drawPowerPills: function() {
+    const allPills = this.getAllPills();
+    for (let i = 0; i < allPills.length; i++) {
+      this.powerPill.draw(allPills[i]);
+    }
+  },
   drawAll: function() {
     this.pacman.draw();
     this.drawDots();
-
+    this.drawPowerPills();
   },
   // ---------------------------------- ENTITIES ---------------------------- //
   dot: {
@@ -178,16 +194,26 @@ const game = { // contains all level functions and info
         // game over: you win!
       }
     },
-    draw: function ( ctx, offset, grid ) {
+    draw: function ( coords ) {
+      const ctx = render.canvas;
+      const grid = render.grid;
+      const offset = render.offset;
+      const frameRate = render.frameRate;
 
+      coords = render.normalizeCoords(coords);
+
+      ctx.fillStyle = '#FA0';
+      ctx.beginPath();
+      ctx.arc(coords.x, coords.y, grid.x / 4, 0, 2 * Math.PI);
+      ctx.fill();
     }
   },
   // cherry: {} // TODO: Add this last
 
   // ------------------------------ PACMAN CHILD OBJECT ---------------------- //
   pacman: {  // contains all pacman functions and info
-    location: { x: 12, y: 22, xTo: 12.5, yTo: 22 }, //start location is x: 12.5, y: 22
-
+    location: { x: 12.5, y: 22 }, //start location is x: 12.5, y: 22
+    nextLocation: { x: 12.5, y: 22 },
     renderInfo: { // going to be an object that contains all shape info for rendering
       hasAmimation: true,
       animation: {
@@ -209,34 +235,74 @@ const game = { // contains all level functions and info
         ]
       }
     },
-
     direction: {x: 0, y: 0},
+    currentDirection: { x: 0, y: 0 },
     move: function() { // direction { x: -1 <> 1; y: -1 <> 1 }
-      const newCoords = {};
-      newCoords.x = this.location.x + this.direction.x;
-      newCoords.y = this.location.y + this.direction.y;
+      // update this location to the next location each tick interval (we've reached it)
+      this.location.x = this.nextLocation.x;
+      this.location.y = this.nextLocation.y;
 
+      // find out what our next location will be
+      const newCoords = {};
+      newCoords.x = Math.floor(this.location.x) + this.direction.x
+      newCoords.y = Math.floor(this.location.y) + this.direction.y
+
+      // test to see if it's a valid location to move to
       const moveResult = game.testSpace( newCoords );
 
       if ( moveResult.move === true ) {
-        this.location = newCoords; // if move was a success, set current coords to new coords.
-        console.log('moving pacman', this.location);
+        // set the next square we're moving to
+        this.nextLocation.x = newCoords.x;
+        this.nextLocation.y = newCoords.y;
+        // save this as a valid direction
+        this.currentDirection.x = this.direction.x;
+        this.currentDirection.y = this.direction.y;
       } else {
-        // do nothing, you can't move there (eg, wall);
+        // reset direction as this is invalid
+        this.currentDirection.x = 0;
+        this.currentDirection.y = 0;
       }
+    },
+    animove: function() {
+      const moveAmntX = this.currentDirection.x / 5; //TODO: Magic Number? Works perfectly but should be calculated.
+      const moveAmntY = this.currentDirection.y / 5;
+      const newX = render.roundTo2Dec(this.location.x + moveAmntX);
+      const newY = render.roundTo2Dec(this.location.y + moveAmntY);
+      this.location.x = newX
+      this.location.y = newY
+      $('.pacmanLocation').text(`Pacman - x:${newX} y:${newY}`)
     },
     tick: function() {
       // do stuff on tick -- called by parent "game"
       // interval -- do every 1 second
-      if ( Math.round( this.tickTimer ) >= this.tickInterval ) {
-        this.move();
+      
+      if ( this.tickTimer >= this.tickInterval ) {
+        this.move()
         this.tickTimer = 0;
       } else {
         this.tickTimer += 1000 / render.frameRate
+        this.animove();
+        
       }
     },
     tickTimer: 0,
-    tickInterval: 500,
+    tickInterval: 30 * 4,
+    getDirectionInRadians: function() {
+      const dir = this.currentDirection
+
+      if (dir.x == 1) { // to the right
+        return Math.PI * 0;
+      } else if (dir.y == -1 ) { // downwards
+        return Math.PI * -0.5;
+      } else if (dir.x == -1 ) { // to the left
+        return Math.PI * 1;
+      } else if (dir.y == 1) { // upwards
+        return Math.PI * 0.5;
+      } else {
+        return false;
+      }
+
+    },
     draw: function () {
       const ctx = render.canvas;
       const frameRate = render.frameRate;
@@ -251,6 +317,7 @@ const game = { // contains all level functions and info
 
       // from keyframe index = Math.floor(currentTimestamp / keyFrameTransition)
 
+
       const fromKeyFrameIndex = Math.floor( timestamp / keyFrameTransitionTime )
       const toKeyFrameIndex = fromKeyFrameIndex + 1 > keyFrames ? 0 : fromKeyFrameIndex + 1
 
@@ -261,9 +328,17 @@ const game = { // contains all level functions and info
       // 0       %   500  / keyFrameTransitionTime
       const fractionToKeyFrame = ( timestamp % keyFrameTransitionTime ) / keyFrameTransitionTime;
 
-      const startAngle = render.interpValue( fromKeyFrame.startAngle, toKeyFrame.startAngle, fractionToKeyFrame );
-      const endAngle = render.interpValue( fromKeyFrame.endAngle, toKeyFrame.endAngle, fractionToKeyFrame );
-
+      const directionAngle = this.getDirectionInRadians();
+      let startAngle, endAngle;
+      if ( directionAngle === false ) {
+        startAngle = 0;
+        endAngle = Math.PI * 2;
+      } else {
+        startAngle = render.interpValue(fromKeyFrame.startAngle, toKeyFrame.startAngle, fractionToKeyFrame) + directionAngle
+        
+        endAngle = render.interpValue(fromKeyFrame.endAngle, toKeyFrame.endAngle, fractionToKeyFrame) + directionAngle
+      }
+     
       //console.( startAngle, endAngle );
       // center of cicle // TODO: smooth this using previous & to locations
       let coords = {

@@ -16,7 +16,7 @@ tick.initEvent('tick', true, true);
 
 
 $( document ).ready( () => {
-  $( '.container' ).append( $gameCanvas );
+  $( '.container' ).prepend( $gameCanvas );
   document.addEventListener( 'tick', () => render.tick() );
   setInterval( () => document.dispatchEvent(tick), 1000 / render.frameRate);
 });
@@ -56,5 +56,8 @@ const render = { // will contain functions to draw things on the canvas
       x: (coords.x + this.offset.x) * this.canvas.canvas.width / this.grid.x,
       y: (coords.y + this.offset.y) * this.canvas.canvas.height / this.grid.y
     }
+  },
+  roundTo2Dec: function( num ) {
+    return parseInt( num * 100 )/100
   }
 };
