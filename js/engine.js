@@ -59,5 +59,41 @@ const render = { // will contain functions to draw things on the canvas
   },
   roundTo2Dec: function( num ) {
     return parseInt( num * 100 )/100
+  },
+  getAnimationInfo: function ( obj ) {
+
+    animInfo = {};
+    animInfo.ctx = this.canvas;
+    animInfo.frameRate = this.frameRate;
+
+    if ( !isEmpty(obj.renderInfo) && !isEmpty(obj.renderInfo.animation) ) {
+      animInfo.animation = obj.renderInfo.animation
+      animInfo.duration = animInfo.animation.duration // -> 1000
+      animInfo.timestamp = animInfo.animation.currentTimestamp // -> eg 0 (also increment timestamp)
+      animInfo.keyFrames = animInfo.animation.keyFrames.length // -> 3
+
+      animInfo.keyFrameTransitionTime = duration / (keyFrames - 1) // -> 500
+      // -1 as we don't count first keyframe as having duration, eg fence posts |---|---| - there are only two in-between the fence-posts.
+
+      animInfo.fromKeyFrameIndex = Math.floor(animInfo.timestamp / animInfo.keyFrameTransitionTime)
+      animInfo.toKeyFrameIndex = animInfo.fromKeyFrameIndex + 1 > animInfo.keyFrames ? 0 : animInfo.fromKeyFrameIndex + 1
+
+      animInfo.fromKeyFrame = animInfo.animation.keyFrames[animInfo.fromKeyFrameIndex];
+      animInfo.toKeyFrame = animInfo.animation.keyFrames[animInfo.toKeyFrameIndex];
+
+      // interp values by % between keyframes ( float from 0.0 - 1.0 );
+      // 0       %   500  / keyFrameTransitionTime
+      animInfo.fractionToKeyFrame = (animInfo.timestamp % animInfo.keyFrameTransitionTime) / animInfo.keyFrameTransitionTime;
+    }
+    
+
+    return animInfo;
   }
 };
+
+
+
+
+const isEmpty = function (obj) {
+  return obj.renderInfo === null || obj.renderInfo === undefined
+}

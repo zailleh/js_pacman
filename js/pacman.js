@@ -197,8 +197,6 @@ const game = { // contains all level functions and info
     draw: function ( coords ) {
       const ctx = render.canvas;
       const grid = render.grid;
-      const offset = render.offset;
-      const frameRate = render.frameRate;
 
       coords = render.normalizeCoords(coords);
 
@@ -304,29 +302,7 @@ const game = { // contains all level functions and info
 
     },
     draw: function () {
-      const ctx = render.canvas;
-      const frameRate = render.frameRate;
-
-      const animation = this.renderInfo.animation
-      const duration = animation.duration // -> 1000
-      const timestamp = animation.currentTimestamp // -> eg 0 (also increment timestamp)
-      const keyFrames = animation.keyFrames.length // -> 3
-
-      const keyFrameTransitionTime = duration / ( keyFrames - 1) // -> 500
-      // -1 as we don't count first keyframe as having duration, eg fence posts |---|---| - there are only two in-between the fence-posts.
-
-      // from keyframe index = Math.floor(currentTimestamp / keyFrameTransition)
-
-
-      const fromKeyFrameIndex = Math.floor( timestamp / keyFrameTransitionTime )
-      const toKeyFrameIndex = fromKeyFrameIndex + 1 > keyFrames ? 0 : fromKeyFrameIndex + 1
-
-      const fromKeyFrame = animation.keyFrames[ fromKeyFrameIndex ];
-      const toKeyFrame = animation.keyFrames[ toKeyFrameIndex ];
-
-      // interp values by % between keyframes ( float from 0.0 - 1.0 );
-      // 0       %   500  / keyFrameTransitionTime
-      const fractionToKeyFrame = ( timestamp % keyFrameTransitionTime ) / keyFrameTransitionTime;
+      const animInfo = render.getAnimationInfo( this );
 
       const directionAngle = this.getDirectionInRadians();
       let startAngle, endAngle;
@@ -334,9 +310,9 @@ const game = { // contains all level functions and info
         startAngle = 0;
         endAngle = Math.PI * 2;
       } else {
-        startAngle = render.interpValue(fromKeyFrame.startAngle, toKeyFrame.startAngle, fractionToKeyFrame) + directionAngle
+        startAngle = render.interpValue(animInfo.fromKeyFrame.startAngle, animInfo.toKeyFrame.startAngle, animInfo.fractionToKeyFrame) + directionAngle
         
-        endAngle = render.interpValue(fromKeyFrame.endAngle, toKeyFrame.endAngle, fractionToKeyFrame) + directionAngle
+        endAngle = render.interpValue(animInfo.fromKeyFrame.endAngle, animInfo.toKeyFrame.endAngle, animInfo.fractionToKeyFrame) + directionAngle
       }
      
       //console.( startAngle, endAngle );
@@ -348,21 +324,19 @@ const game = { // contains all level functions and info
       coords = render.normalizeCoords( coords )
 
       // size of circle
-      const radius = ctx.canvas.width / 29; // magic numberz!
+      const radius = animInfo.ctx.canvas.width / 29; // magic numberz!
 
       // draw and fill our cicle
-      ctx.fillStyle = '#FF0';
-      ctx.beginPath()
-      ctx.arc( coords.x, coords.y, radius, startAngle, endAngle );
-      ctx.lineTo( coords.x, coords.y );
-      ctx.fill();
+      animInfo.ctx.fillStyle = '#FF0';
+      animInfo.ctx.beginPath()
+      animInfo.ctx.arc( coords.x, coords.y, radius, startAngle, endAngle );
+      animInfo.ctx.lineTo( coords.x, coords.y );
+      animInfo.ctx.fill();
 
-
-
-      if ( Math.round( animation.currentTimestamp ) >= duration ) {
-        animation.currentTimestamp = 0;
+      if (Math.round( this.renderInfo.animation.currentTimestamp ) >= this.renderInfo.animation.duration ) {
+        this.renderInfo.animation.currentTimestamp = 0;
       } else {
-        animation.currentTimestamp += 1000 / frameRate;
+        this.renderInfo.animation.currentTimestamp += 1000 / animInfo.frameRate;
       }
     }
   },
@@ -375,8 +349,10 @@ const game = { // contains all level functions and info
     shapeInfo: { // going to be an object that contains all shape info for rendering
 
     },
-    draw: function ( ctx, offset, grid ) {
+    draw: function ( colour ) {
+      const animInfo = render.getAnimationInfo(this);
 
+      // TODO: Draw 
     }
   }
 };
