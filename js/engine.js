@@ -65,19 +65,18 @@ const render = { // will contain functions to draw things on the canvas
     animInfo = {};
     animInfo.ctx = this.canvas;
     animInfo.frameRate = this.frameRate;
-
+    
     if ( !isEmpty(obj.renderInfo) && !isEmpty(obj.renderInfo.animation) ) {
       animInfo.animation = obj.renderInfo.animation
       animInfo.duration = animInfo.animation.duration // -> 1000
       animInfo.timestamp = animInfo.animation.currentTimestamp // -> eg 0 (also increment timestamp)
       animInfo.keyFrames = animInfo.animation.keyFrames.length // -> 3
 
-      animInfo.keyFrameTransitionTime = duration / (keyFrames - 1) // -> 500
+      animInfo.keyFrameTransitionTime = animInfo.duration / (animInfo.keyFrames - 1) // -> 500
       // -1 as we don't count first keyframe as having duration, eg fence posts |---|---| - there are only two in-between the fence-posts.
 
       animInfo.fromKeyFrameIndex = Math.floor(animInfo.timestamp / animInfo.keyFrameTransitionTime)
       animInfo.toKeyFrameIndex = animInfo.fromKeyFrameIndex + 1 > animInfo.keyFrames ? 0 : animInfo.fromKeyFrameIndex + 1
-
       animInfo.fromKeyFrame = animInfo.animation.keyFrames[animInfo.fromKeyFrameIndex];
       animInfo.toKeyFrame = animInfo.animation.keyFrames[animInfo.toKeyFrameIndex];
 
@@ -95,5 +94,5 @@ const render = { // will contain functions to draw things on the canvas
 
 
 const isEmpty = function (obj) {
-  return obj.renderInfo === null || obj.renderInfo === undefined
+  return obj === null || obj === undefined
 }
