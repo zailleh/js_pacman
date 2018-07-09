@@ -157,6 +157,7 @@ const game = { // contains all level functions and info
     this.pacman.draw();
     this.drawDots();
     this.drawPowerPills();
+    this.ghosts.draw();
   },
   // ---------------------------------- ENTITIES ---------------------------- //
   dot: {
@@ -351,6 +352,158 @@ const game = { // contains all level functions and info
     },
     draw: function ( colour ) {
       const animInfo = render.getAnimationInfo(this);
+      
+      // Coordinates setup for Ghost background
+      let coords = {
+        x: 0,
+        y: 0
+      };
+
+      let coordsBtmLeft = {
+        x: coords.x - 1,
+        y: coords.y + 1
+      };
+
+      let coordsTopLeft = {
+        x: coords.x - 1,
+        y: coords.y
+      };
+
+      let coordsBtmRight = {
+        x: coords.x + 1,
+        y: coords.y + 1
+      };
+
+      let coordsArcCentre = {
+        x: coords.x,
+        y: coords.y
+      };
+
+      let coordsBase1 = {
+        x: coordsBtmRight.x - (1/3),
+        y: coordsBtmRight.y - (1/3)
+      }
+
+      let coordsBase2 = {
+        x: coordsBase1.x - (1/3),
+        y: coordsBase1.y + (1/3)
+      }
+
+      let coordsBase3 = {
+        x: coordsBase2.x - (1/3),
+        y: coordsBase2.y - (1/3)
+      }
+
+      let coordsBase4 = {
+        x: coordsBase3.x - (1/3),
+        y: coordsBase3.y + (1/3)
+      }
+
+      let coordsBase5 = {
+        x: coordsBase4.x - (1/3),
+        y: coordsBase4.y - (1/3)
+      }
+
+      let radius = animInfo.ctx.canvas.width / render.grid.x;
+
+      coordsBtmLeft = render.normalizeCoords( coordsBtmLeft );
+      coordsTopLeft = render.normalizeCoords( coordsTopLeft );
+      coordsBtmRight = render.normalizeCoords( coordsBtmRight );
+      coordsArcCentre = render.normalizeCoords( coordsArcCentre );
+      coordsBase1 = render.normalizeCoords( coordsBase1 );
+      coordsBase2 = render.normalizeCoords( coordsBase2 );
+      coordsBase3 = render.normalizeCoords( coordsBase3 );
+      coordsBase4 = render.normalizeCoords( coordsBase4 );
+      coordsBase5 = render.normalizeCoords( coordsBase5 );
+
+      coords = render.normalizeCoords( coords );
+
+      // Draw ghost background
+      animInfo.ctx.fillStyle = '#00F'; // Blue
+      animInfo.ctx.beginPath();
+      animInfo.ctx.moveTo( coordsBtmLeft.x, coordsBtmLeft.y );
+      animInfo.ctx.lineTo( coordsTopLeft.x, coordsTopLeft.y );
+      animInfo.ctx.arc( coordsArcCentre.x, coordsArcCentre.y, radius, 1 * Math.PI, 2 * Math.PI);
+      animInfo.ctx.lineTo( coordsBtmRight.x, coordsBtmRight.y );
+      animInfo.ctx.lineTo( coordsBase1.x, coordsBase1.y );
+      animInfo.ctx.lineTo( coordsBase2.x, coordsBase2.y );
+      animInfo.ctx.lineTo( coordsBase3.x, coordsBase3.y ); 
+      animInfo.ctx.lineTo( coordsBase4.x, coordsBase4.y );
+      animInfo.ctx.lineTo( coordsBase5.x, coordsBase5.y );
+      animInfo.ctx.fill()
+
+      // Coords for Ghost Eyes
+      // left eye
+      let arcCenter = {
+        x: -0.3,
+        y: -0.2
+      };
+
+      arcCenter = render.normalizeCoords( arcCenter );
+
+      radius = animInfo.ctx.canvas.width / render.grid.x / 4; //eyes 1 quarter width of ghost
+
+      // draw left eye
+      animInfo.ctx.fillStyle = '#FFF'; // White
+      animInfo.ctx.beginPath();
+      animInfo.ctx.arc( arcCenter.x, arcCenter.y, radius, 0, 2*Math.PI );
+      animInfo.ctx.fill();
+
+      // left pupil
+      arcCenter = {
+        x: arcCenter.x,
+        y: arcCenter.y
+      };
+
+      // arcCenter = render.normalizeCoords(arcCenter);
+
+      radius = radius / 2; //pupil 1/3rd of the eye radius
+
+      // draw left pupil
+      animInfo.ctx.fillStyle = '#00F'; // Blue
+      animInfo.ctx.beginPath();
+      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.fill();
+
+      // right eye
+      arcCenter = {
+        x: 0.3,
+        y: -0.2
+      };
+
+      arcCenter = render.normalizeCoords(arcCenter);
+
+      radius = animInfo.ctx.canvas.width / render.grid.x / 4; //eyes 1 quarter width of ghost
+
+      // draw right eye
+      animInfo.ctx.fillStyle = '#FFF'; // Blue
+      animInfo.ctx.beginPath();
+      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.fill();
+
+      // right pupil
+      arcCenter = {
+        x: arcCenter.x,
+        y: arcCenter.y
+      };
+
+      // arcCenter = render.normalizeCoords(arcCenter);
+
+      radius = radius / 2; //pupil 1/3rd of the eye radius
+
+      // draw right pupil
+      animInfo.ctx.fillStyle = '#00F'; // Blue
+      animInfo.ctx.beginPath();
+      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.fill();
+      
+      //   ______      
+      //  /      \
+      // |  O  O  |
+      // |   __   |
+      // |        |
+      // |/\/\/\/\|
+      // x-.5 y+.75
 
       // TODO: Draw 
     }
