@@ -283,7 +283,6 @@ const game = { // contains all level functions and info
       } else {
         this.tickTimer += 1000 / render.frameRate
         this.animove();
-        
       }
     },
     tickTimer: 0,
@@ -346,28 +345,128 @@ const game = { // contains all level functions and info
 
   // ------------------------------ GHOSTS CHILD OBJECT ---------------------- //
   ghosts: {
-    moveTimer: -1,
+    tickTimer: 0,
+    tickInterval: 30 * 4,
     tick: function() {
-      if (this.moveTimer < 0) {
-        this.moveTimer = setTimeout(() => {
-          this.move();
-          this.moveTimer = -1; 
-        },1000);
+      if (this.tickTimer >= this.tickInterval) {
+        this.move()
+        this.tickTimer = 0;
+      } else {
+        this.tickTimer += 1000 / render.frameRate
+        this.animove();
       }
     },
     shapeInfo: { // going to be an object that contains all shape info for rendering
 
     },
-    location: {x:0, y:0},
-    nextLocation: {x:1, y:0},
-    direction: { x: 1, y: 0 },
-    currentDirection: { x: 1, y: 0 },
+    location: { x: 0, y: 0 },
+    nextLocation: { x: 0, y: 0 },
+    direction: { x: 0, y: 0 },
+    currentDirection: { x: 0, y: 0 },
+    animove: function () {
+      const moveAmntX = this.currentDirection.x / 5; //TODO: Magic Number? Works perfectly but should be calculated.
+      const moveAmntY = this.currentDirection.y / 5;
+      const newX = render.roundTo2Dec(this.location.x + moveAmntX);
+      const newY = render.roundTo2Dec(this.location.y + moveAmntY);
+      this.location.x = newX
+      this.location.y = newY
+    },
+    chooseLeft: function() {
+      // left
+      let left = {};
+      left.x = this.location.x - 1;
+      left.y = this.location.y
+      let move = game.testSpace(left).move;
+      if (move) {
+        this.direction = { x: -1, y: 0 };
+      }
+      return move;
+    },
+    chooseRight: function() {
+      // right
+      let right = {};
+      right.x = this.location.x + 1;
+      right.y = this.location.y
+      let move = game.testSpace(right).move;
+      if (move) {
+        this.direction = { x: 1, y: 0 };
+      }
+      return move;
+    },
+    chooseUp: function() {
+      // up
+      let up = {};
+      up.x = this.location.x;
+      up.y = this.location.y - 1;
+      console.log(up);
+      let move = game.testSpace(up).move;
+      if (move) {
+        this.direction = { x: 0, y: -1 };
+      }
+      return move;
+    },
+    chooseDown: function() {
+      let down = {};
+      down.x = this.location.x;
+      down.y = this.location.y + 1;
+      console.log(down);
+      let move = game.testSpace(down).move
+      if (move) {
+        this.direction = { x: 0, y: 1 };
+      }
+      return move;
+    },
+    choosePath: function () {
+      let dirToPacman = {};
+      dirToPacman.x = game.pacman.location.x - this.location.x;
+      dirToPacman.y = game.pacman.location.y - this.location.y;
+      
+      if (Math.abs(dirToPacman.x) > Math.abs(dirToPacman.y)) {
+        if (dirToPacman.x > 0) {
+          if (this.chooseRight()) {
+            return;
+          } else if (dirToPacman.y > 0 && this.chooseDown()) {
+            return;
+          } else {
+            this.chooseUp();
+          }
+        } else {
+          if (this.chooseLeft()) {
+            return;
+          } else if (dirToPacman.y > 0 && this.chooseDown()) {
+            return;
+          } else {
+            this.chooseUp();
+          }
+        }
+      } else {
+        if (dirToPacman.y > 0 ) {
+          if (this.chooseDown()) {
+           return;
+          } else if (dirToPacman.x > 0 && this.chooseRight()) {
+            return;
+          } else {
+            this.chooseLeft();
+          }
+        } else { 
+          if (this.chooseUp()) {
+            return;
+          } else if (dirToPacman.x > 0 && this.chooseRight()) {
+            return;
+          } else {
+            this.chooseLeft();
+          }
+        }
+      }
+    },
     move: function () { // direction { x: -1 <> 1; y: -1 <> 1 }
       // update this location to the next location each tick interval (we've reached it)
       this.location.x = this.nextLocation.x;
       this.location.y = this.nextLocation.y;
 
       // find out what our next location will be
+      this.choosePath();
+      // console.log(this.direction);
       const newCoords = {};
       newCoords.x = Math.floor(this.location.x) + this.direction.x
       newCoords.y = Math.floor(this.location.y) + this.direction.y
