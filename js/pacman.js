@@ -74,11 +74,11 @@ const game = { // contains all level functions and info
     try {
       switch (this.playArea[coords.y][coords.x]) {
         case '.': // dot
-          this.dot.nom( coords );
+          result.action = this.dot.nom.bind(this);
           result.move = true;
           break;
         case 'O': // power pill
-          that.powerPill.nom( coords);
+          result.action = this.powerPill.nom.bind(this);
           result.move = true;
           break;
         case '|': // wall
@@ -250,9 +250,11 @@ const game = { // contains all level functions and info
       const moveResult = game.testSpace( newCoords );
 
       if ( moveResult.move === true ) {
+        if (moveResult.action && moveResult.action.call) moveResult.action( newCoords );
         // set the next square we're moving to
         this.nextLocation.x = newCoords.x;
         this.nextLocation.y = newCoords.y;
+        
         // save this as a valid direction
         this.currentDirection.x = this.direction.x;
         this.currentDirection.y = this.direction.y;
@@ -344,20 +346,54 @@ const game = { // contains all level functions and info
 
   // ------------------------------ GHOSTS CHILD OBJECT ---------------------- //
   ghosts: {
+    moveTimer: -1,
     tick: function() {
-
+      if (this.moveTimer < 0) {
+        this.moveTimer = setTimeout(() => {
+          this.move();
+          this.moveTimer = -1; 
+        },1000);
+      }
     },
     shapeInfo: { // going to be an object that contains all shape info for rendering
 
+    },
+    location: {x:0, y:0},
+    nextLocation: {x:1, y:0},
+    direction: { x: 1, y: 0 },
+    currentDirection: { x: 1, y: 0 },
+    move: function () { // direction { x: -1 <> 1; y: -1 <> 1 }
+      // update this location to the next location each tick interval (we've reached it)
+      this.location.x = this.nextLocation.x;
+      this.location.y = this.nextLocation.y;
+
+      // find out what our next location will be
+      const newCoords = {};
+      newCoords.x = Math.floor(this.location.x) + this.direction.x
+      newCoords.y = Math.floor(this.location.y) + this.direction.y
+
+      // test to see if it's a valid location to move to
+      const moveResult = game.testSpace(newCoords);
+
+      if (moveResult.move === true) {
+        // set the next square we're moving to
+        this.nextLocation.x = newCoords.x;
+        this.nextLocation.y = newCoords.y;
+
+        // save this as a valid direction
+        this.currentDirection.x = this.direction.x;
+        this.currentDirection.y = this.direction.y;
+      } else {
+        // reset direction as this is invalid
+        this.currentDirection.x = 0;
+        this.currentDirection.y = 0;
+      }
     },
     draw: function ( colour ) {
       const animInfo = render.getAnimationInfo(this);
       
       // Coordinates setup for Ghost background
-      let coords = {
-        x: 0,
-        y: 0
-      };
+      let coords = this.location;
 
       let coordsBtmLeft = {
         x: coords.x - 1,
@@ -403,6 +439,19 @@ const game = { // contains all level functions and info
         x: coordsBase4.x - (1/3),
         y: coordsBase4.y - (1/3)
       }
+      // left eye
+      let arcCenterL = {
+        x: coords.x -0.3 ,
+        y: coords.y -0.2
+      };
+
+      // right eye
+      let arcCenterR = {
+        x: coords.x + 0.3,
+        y: coords.y - 0.2
+      };
+
+
 
       let radius = animInfo.ctx.canvas.width / render.grid.x;
 
@@ -415,6 +464,8 @@ const game = { // contains all level functions and info
       coordsBase3 = render.normalizeCoords( coordsBase3 );
       coordsBase4 = render.normalizeCoords( coordsBase4 );
       coordsBase5 = render.normalizeCoords( coordsBase5 );
+      arcCenterL = render.normalizeCoords(arcCenterL);
+      arcCenterR = render.normalizeCoords(arcCenterR);
 
       coords = render.normalizeCoords( coords );
 
@@ -433,58 +484,42 @@ const game = { // contains all level functions and info
       animInfo.ctx.fill()
 
       // Coords for Ghost Eyes
-      // left eye
-      let arcCenter = {
-        x: -0.3,
-        y: -0.2
+      // left pupil
+      let arcCenterLP = {
+        x: arcCenterL.x,
+        y: arcCenterL.y
       };
-
-      arcCenter = render.normalizeCoords( arcCenter );
 
       radius = animInfo.ctx.canvas.width / render.grid.x / 4; //eyes 1 quarter width of ghost
 
       // draw left eye
       animInfo.ctx.fillStyle = '#FFF'; // White
       animInfo.ctx.beginPath();
-      animInfo.ctx.arc( arcCenter.x, arcCenter.y, radius, 0, 2*Math.PI );
+      animInfo.ctx.arc( arcCenterL.x, arcCenterL.y, radius, 0, 2*Math.PI );
       animInfo.ctx.fill();
-
-      // left pupil
-      arcCenter = {
-        x: arcCenter.x,
-        y: arcCenter.y
-      };
-
-      // arcCenter = render.normalizeCoords(arcCenter);
 
       radius = radius / 2; //pupil 1/3rd of the eye radius
 
       // draw left pupil
       animInfo.ctx.fillStyle = '#00F'; // Blue
       animInfo.ctx.beginPath();
-      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.arc(arcCenterLP.x, arcCenterLP.y, radius, 0, 2 * Math.PI);
       animInfo.ctx.fill();
 
       // right eye
-      arcCenter = {
-        x: 0.3,
-        y: -0.2
-      };
-
-      arcCenter = render.normalizeCoords(arcCenter);
 
       radius = animInfo.ctx.canvas.width / render.grid.x / 4; //eyes 1 quarter width of ghost
 
       // draw right eye
       animInfo.ctx.fillStyle = '#FFF'; // Blue
       animInfo.ctx.beginPath();
-      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.arc(arcCenterR.x, arcCenterR.y, radius, 0, 2 * Math.PI);
       animInfo.ctx.fill();
 
       // right pupil
-      arcCenter = {
-        x: arcCenter.x,
-        y: arcCenter.y
+      arcCenterRP = {
+        x: arcCenterR.x,
+        y: arcCenterR.y
       };
 
       // arcCenter = render.normalizeCoords(arcCenter);
@@ -494,7 +529,7 @@ const game = { // contains all level functions and info
       // draw right pupil
       animInfo.ctx.fillStyle = '#00F'; // Blue
       animInfo.ctx.beginPath();
-      animInfo.ctx.arc(arcCenter.x, arcCenter.y, radius, 0, 2 * Math.PI);
+      animInfo.ctx.arc(arcCenterRP.x, arcCenterRP.y, radius, 0, 2 * Math.PI);
       animInfo.ctx.fill();
       
       //   ______      
